@@ -15,7 +15,9 @@ SELECT ROWID, EMPLOYEE_ID, FIRST_NAME, LAST_NAME
 SELECT *
   FROM EMPLOYEES
   WHERE ROWID = 'AAAR+IAAHAAAADLAAE';
-  
+
+
+ 
 /*
     인덱스
     1. 빠른 조회를 지원하는 데이터베이스 객체이다.
@@ -23,6 +25,17 @@ SELECT *
     3. 기본키(PK)와 중복이 없는 칼럼(UNIQUE)은 자동으로 인덱스가 만들어진다.
     4. 인덱스가 많으면 데이터의 삽입/수정/삭제 시 인덱스도 함께 갱신해야 하기 때문에 전제척인 성능이 떨어질 수 있다.
 */
+
+-- 인덱스를 타는 조회
+SELECT *
+  FROM EMPLOYEES
+ WHERE EMPLOYEE_ID = 150;
+ 
+-- 인덱스를 타는 조회 (인덱스 칼럼을 그대로 사용하지 않고 함수를 적용해서 사용하면 인덱스를 타지 않는다.)
+SELECT *
+  FROM EMPLOYEES
+ WHERE TO_CHAR(EMPLOYEE_ID) = '150';
+
 
 -- 인덱스 정보가 저장되어 있는 데이터 사전(이미 만들어진 테이블)
 
