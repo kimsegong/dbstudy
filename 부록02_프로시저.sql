@@ -84,5 +84,113 @@ END;
 
 
 
+-- 프로시저 실습하기 기초 데이터 
+-- 테이블 삭제하기
+DROP TABLE BUY_T;
+DROP TABLE CUST_T;
+DROP TABLE PROD_T;
+
+--  시퀀스 삭제하기
+DROP SEQUENCE BUY_SEQ;
+
+-- 제품 테이블 구성하기
+CREATE TABLE PROD_T (
+    P_CODE NUMBER NOT NULL
+  , P_NAME VARCHAR2(20 BYTE)
+  , P_PRICE NUMBER
+  , P_STOCK NUMBER
+  , CONSTRAINT PK_PROD PRIMARY KEY(P_CODE)
+);
+INSERT INTO PROD_T(P_CODE, P_NAME, P_PRICE, P_STOCK) VALUES(1000, '홈런볼', 1000, 100);
+INSERT INTO PROD_T(P_CODE, P_NAME, P_PRICE, P_STOCK) VALUES(1001, '맛동산', 2000, 100);
+COMMIT;
+
+-- 고객 테이블 구성하기
+CREATE TABLE CUST_T (
+    C_NO NUMBER NOT NULL
+  , C_NAME VARCHAR2(20 BYTE)
+  , C_POINT NUMBER
+  , CONSTRAINT PK_CUST PRIMARY KEY(C_NO)
+);
+INSERT INTO CUST_T(C_NO, C_NAME, C_POINT) VALUES(1, '정숙', 0);
+INSERT INTO CUST_T(C_NO, C_NAME, C_POINT) VALUES(2, '상철', 0);
+COMMIT;
+
+-- 구매 테이블 & 구매 시퀀스 구성하기
+CREATE TABLE BUY_T (
+    B_NO NUMBER NOT NULL
+  , C_NO NUMBER NOT NULL
+  , P_CODE NUMBER
+  , B_AMOUNT NUMBER
+  , CONSTRAINT PK_BUY PRIMARY KEY(B_NO)
+  , CONSTRAINT FK_PROD_BUY FOREIGN KEY(P_CODE) REFERENCES PROD_T(P_CODE) ON DELETE SET NULL
+  , CONSTRAINT FK_CUST_BUY FOREIGN KEY(C_NO) REFERENCES CUST_T(C_NO) ON DELETE CASCADE
+);
+CREATE SEQUENCE BUY_SEQ ORDER;
+
+/* 
+    프로시저 실습하기
+    
+    1.BUY_PROC 프로시저를 작성한다.
+    2.처리할 일
+        1) 제품 테이블의 재고를 수정합니다.
+        2) 고객 테이블의 포인트를 수정한다.
+        3) 주문 테이블에 주문내역을 삽입한다.
+    3. 프로시저 호출 예시
+        BUY_PROC(1, 1000, 10); 고객번호 1이 제품코드 1000을 10개 구매하였다.
+
+*/
+
+CREATE OR REPLACE PROCEDURE BUY_PROC(
+ /*고객번호*/        CNO IN CUST_T.C_NO%TYPE
+ /*제품코드*/   ,  PCODE IN PROD_T.P_CODE%TYPE
+ /*구매수량*/   , AMOUNT IN BUY_T.B_AMOUNT%TYPE
+)
+AS
+BEGIN
+
+    -- 1) 제품 테이블의 재고를 수정한다.
+    UPDATE PROD_T
+       SET P_STOCK = P_STOCK - AMOUNT
+     WHERE P_CODE = PCODE;
+        
+    -- 2) 고객  테이블의 포인트를 수정한다.(구매액의 10%, 소수 이하 올림 처리)
+    UPDATE CUST_T
+       SET C_POINT = C_POINT + CEIL((SELECT P_PRICE FROM PROD_T WHERE P_CODE = PCODE) * AMOUNT * 0.1)
+     WHERE C_NO = CNO;
+    
+    -- 3) 주문 테이블에 주문내역을 삽입한다.
+    INSERT INTO BUY_T(
+        B_NO
+      , C_NO
+      , P_CODE
+      , B_AMOUNT
+    ) VALUES (
+        BUY_SEQ.NEXTVAL
+       ,CNO
+       ,PCODE
+       ,AMOUNT
+    );
+
+    -- 4) 커밋
+    COMMIT;
+
+EXCEPTION 
+
+    WHEN OTHERS THEN  -- 모든 예외 처리
+        
+        -- 예외 사유 출력
+        DBMS_OUTPUT.PUT_LINE(SQLERRM || '(' || SQLCODE || ')');
+
+        -- 작업 수행 취소
+        ROLLBACK;
+        
+END;
+
+
+BEGIN
+     BUY_PROC(1, 1000, 10);
+END;
+
 
 
